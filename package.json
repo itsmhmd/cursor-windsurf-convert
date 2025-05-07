@@ -46,12 +46,10 @@
     "prepare": "pnpx lefthook install"
   },
   "devDependencies": {
-    "@antfu/eslint-config": "catalog:cli",
     "@antfu/ni": "catalog:cli",
     "@antfu/utils": "catalog:inlined",
     "@types/node": "catalog:types",
     "bumpp": "catalog:cli",
-    "eslint": "catalog:cli",
     "tinyexec": "catalog:utils",
     "tsx": "catalog:cli",
     "typescript": "catalog:cli",
