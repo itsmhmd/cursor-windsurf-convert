@@ -1,0 +1,6 @@
+---
+description: This rule is for agent-requested actions based on its description.
+alwaysApply: false
+---
+This is the Markdown content for an **agent-requested** (model decision) rule.
+It has a description and alwaysApply is false, but no globs.

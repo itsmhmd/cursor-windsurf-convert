@@ -1,0 +1,7 @@
+---
+globs: "src/**/*.ts,!src/generated/*"
+description: This rule applies to TypeScript files, excluding generated ones.
+alwaysApply: false
+---
+This is the Markdown content for a **glob-triggered** rule.
+It targets specific TypeScript files.

@@ -1,0 +1,77 @@
+{
+  "name": "cursor-windsurf-convert",
+  "type": "module",
+  "version": "0.1.0",
+  "packageManager": "pnpm@10.6.2",
+  "description": "Convert cursor rules to windsurf rules and vice versa",
+  "author": "Gordon Mickel <gordon@mickel.tech>",
+  "license": "MIT",
+  "funding": "https://github.com/sponsors/gmickel",
+  "homepage": "https://github.com/gmickel/cursor-windsurf-convert#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gmickel/cursor-windsurf-convert.git"
+  },
+  "bugs": "https://github.com/gmickel/cursor-windsurf-convert/issues",
+  "keywords": [
+    "cursor",
+    "windsurf",
+    "rules",
+    "converter"
+  ],
+  "sideEffects": false,
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "bin": {
+    "cuws": "dist/cli.js"
+  },
+  "main": "./dist/index.mjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "unbuild",
+    "dev": "unbuild --stub",
+    "lint": "biome check .",
+    "lint:fix": "biome check . --write",
+    "prepublishOnly": "nr build",
+    "release": "bumpp && pnpm publish",
+    "start": "tsx src/index.ts",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "prepare": "pnpx lefthook install"
+  },
+  "devDependencies": {
+    "@antfu/eslint-config": "catalog:cli",
+    "@antfu/ni": "catalog:cli",
+    "@antfu/utils": "catalog:inlined",
+    "@types/node": "catalog:types",
+    "bumpp": "catalog:cli",
+    "eslint": "catalog:cli",
+    "lint-staged": "catalog:cli",
+    "simple-git-hooks": "catalog:cli",
+    "tinyexec": "catalog:utils",
+    "tsx": "catalog:cli",
+    "typescript": "catalog:cli",
+    "unbuild": "catalog:cli",
+    "vite": "catalog:cli",
+    "vitest": "catalog:testing",
+    "vitest-package-exports": "catalog:testing",
+    "yaml": "catalog:testing"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "pnpm i --frozen-lockfile --ignore-scripts --offline && npx lint-staged"
+  },
+  "lint-staged": {
+    "*": "eslint --fix"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3",
+    "gray-matter": "^4.0.3",
+    "yargs": "^17.7.2"
+  }
+}

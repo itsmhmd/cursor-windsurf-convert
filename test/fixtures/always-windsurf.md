@@ -1,0 +1,6 @@
+---
+trigger: always_on
+description: This rule should always be active.
+---
+This is the Markdown content for an **always-on** rule.
+It will be used for testing the conversion from Cursor to Windsurf and back.
