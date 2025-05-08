@@ -1,0 +1,6 @@
+---
+description: Rule with glob *
+globs: *
+alwaysApply: false
+---
+This rule uses a single asterisk glob.

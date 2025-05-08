@@ -1,4 +1,5 @@
 import matter from 'gray-matter';
+// Reverted js-yaml import - using gray-matter default parser
 import type {
   ConversionDirection,
   CursorFrontMatter,
@@ -17,12 +18,41 @@ const WINDSURF_TRIGGER_KEY = 'trigger:';
  * @returns An object containing the parsed data and content.
  * @throws {ConversionError} if YAML parsing fails (E03).
  */
+
+// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shrug
 export function parseRuleFileContent(
   fileContent: string,
   filePath?: string
 ): { data: Record<string, unknown>; content: string } {
   try {
-    const { data, content } = matter(fileContent);
+    // Pre-process to quote problematic 'globs' values if unquoted
+    let processedContent = fileContent;
+    // biome-ignore lint/performance/useTopLevelRegex: test
+    const fmRegex = /^---\s*([\s\S]*?)\s*---/;
+    const match = fileContent.match(fmRegex);
+    if (match?.[1]) {
+      const fmContent = match[1];
+      // biome-ignore lint/performance/useTopLevelRegex: test
+      const globRegex = /^(globs\s*:\s*)(.*)$/m;
+      const globMatch = fmContent.match(globRegex);
+      if (globMatch?.[2]) {
+        const globValue = globMatch[2].trim();
+        // Check if unquoted and contains special chars often misinterpreted
+        // biome-ignore lint/performance/useTopLevelRegex: test
+        if (!/^['"].*['"]$/.test(globValue) && /[*{}?,:]/.test(globValue)) {
+          // Add quotes (using single quotes for simplicity)
+          const quotedGlobValue = `'${globValue.replace(/'/g, "''")}'`; // Escape single quotes within
+          const newFmContent = fmContent.replace(
+            globRegex,
+            `$1${quotedGlobValue}`
+          );
+          processedContent = fileContent.replace(fmContent, newFmContent);
+        }
+      }
+    }
+
+    // Use default gray-matter parsing on potentially processed content
+    const { data, content } = matter(processedContent);
     return { data, content };
   } catch (e: unknown) {
     let message = 'Unknown YAML parsing error';
@@ -87,21 +117,40 @@ export function detectFormat(
   fileContent: string,
   parsedData?: Record<string, unknown>
 ): 'cursor' | 'windsurf' | 'unknown' {
-  const first32Chars = fileContent.substring(0, 32);
-  if (first32Chars.includes(WINDSURF_TRIGGER_KEY)) {
+  // Quick check for Windsurf 'trigger:' in the first few lines for performance
+  // Check a bit more than just the first 32 chars to be safer.
+  const firstFewLines = fileContent.substring(
+    0,
+    Math.min(fileContent.length, 512)
+  );
+  if (firstFewLines.includes(WINDSURF_TRIGGER_KEY)) {
+    // WINDSURF_TRIGGER_KEY = 'trigger:'
     return 'windsurf';
   }
 
   const data = parsedData || parseRuleFileContent(fileContent).data;
-  if (CURSOR_ALWAYS_APPLY_KEY in data) {
-    return 'cursor';
-  }
 
-  // Fallback: if trigger is present in data, it's likely Windsurf (e.g. if not in first 32 chars)
+  // Windsurf 'trigger' key is the most definitive identifier.
   if ('trigger' in data) {
+    // If trigger is present, it's almost certainly Windsurf.
+    // The edge case of 'trigger' AND 'alwaysApply' being present
+    // likely indicates Windsurf, as 'alwaysApply' is not a Windsurf key.
     return 'windsurf';
   }
 
+  // If no 'trigger', check for Cursor clues.
+  // Explicit 'alwaysApply' boolean is a strong indicator.
+  if (typeof data[CURSOR_ALWAYS_APPLY_KEY] === 'boolean') {
+    return 'cursor';
+  }
+
+  // Fallback: If no 'trigger' and no boolean 'alwaysApply',
+  // presence of 'globs' or 'description' suggests Cursor.
+  if (data.globs !== undefined || data.description !== undefined) {
+    return 'cursor';
+  }
+
+  // Otherwise, unknown.
   return 'unknown';
 }
 
@@ -116,41 +165,48 @@ export function mapCursorToWindsurf(
 ): WindsurfFrontMatter {
   const { alwaysApply, description, globs, ...rest } = cursorFm;
   let trigger: WindsurfTrigger;
-  const windsurfFm: Partial<WindsurfFrontMatter> = { ...rest };
+  let windsurfFm: Partial<WindsurfFrontMatter> = { ...rest };
 
   if (alwaysApply === true) {
     trigger = 'always_on';
+    // Directly construct the object for this case
+    windsurfFm = {
+      ...rest,
+      trigger: 'always_on',
+    };
+    if (description) {
+      windsurfFm.description = description;
+    }
+    if (globs) {
+      windsurfFm.globs = globs;
+    }
   } else if (globs) {
     trigger = 'glob';
-    windsurfFm.globs = globs;
+    windsurfFm = { ...rest, trigger, globs };
+    if (description) {
+      windsurfFm.description = description;
+    }
   } else if (description) {
     trigger = 'model_decision';
-    windsurfFm.description = description;
+    windsurfFm = { ...rest, trigger, description };
+    // No globs for model_decision typically
   } else {
     // alwaysApply: false, no globs, no description
     trigger = 'manual';
+    windsurfFm = { ...rest, trigger };
   }
 
-  // Clean up undefined fields that might have been copied if they were undefined in cursorFm
-  if (description === undefined) {
-    // biome-ignore lint/performance/noDelete: Necessary for js-yaml compatibility (cannot serialize undefined)
+  // Clean up fields that are explicitly undefined after construction
+  // (Needed because js-yaml doesn't like serializing 'key: undefined')
+  if (windsurfFm.description === undefined) {
+    // biome-ignore lint/performance/noDelete: Necessary for js-yaml compatibility
     delete windsurfFm.description;
   }
-  if (globs === undefined) {
-    // biome-ignore lint/performance/noDelete: Necessary for js-yaml compatibility (cannot serialize undefined)
+  if (windsurfFm.globs === undefined) {
+    // biome-ignore lint/performance/noDelete: Necessary for js-yaml compatibility
     delete windsurfFm.globs;
   }
-
-  // Ensure description is copied if it exists and wasn't the primary trigger determinant
-  if (description && trigger !== 'model_decision') {
-    windsurfFm.description = description;
-  }
-  // Ensure globs are copied if they exist and wasn't the primary trigger determinant
-  if (globs && trigger !== 'glob') {
-    windsurfFm.globs = globs;
-  }
-
-  windsurfFm.trigger = trigger;
+  // Note: 'trigger' is always set, so no need to delete it if undefined.
   return windsurfFm as WindsurfFrontMatter;
 }
 

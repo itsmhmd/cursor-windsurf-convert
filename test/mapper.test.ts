@@ -75,6 +75,57 @@ Content`;
         `YAML front-matter parse failed at line 2 in file ${filePath}:`
       );
     });
+
+    describe('with problematic globs (using JSON_SCHEMA)', () => {
+      const fixtures = [
+        {
+          name: 'asterisk',
+          content:
+            '---\ndescription: Rule with glob *\nglobs: *\nalwaysApply: false\n---\nContent',
+          expectedGlobs: '*',
+          expectedAlwaysApply: false,
+        },
+        {
+          name: 'dot',
+          content:
+            '---\ndescription: Rule with glob *.test.ts\nglobs: *.test.ts\nalwaysApply: false\n---\nContent',
+          expectedGlobs: '*.test.ts',
+          expectedAlwaysApply: false,
+        },
+        {
+          name: 'doublestar',
+          content:
+            '---\ndescription: Rule with glob **/*\nglobs: **/*\nalwaysApply: true\n---\nContent',
+          expectedGlobs: '**/*',
+          expectedAlwaysApply: true,
+        },
+        {
+          name: 'braces',
+          content:
+            '---\ndescription: Rule with glob **/*.{ts,tsx}\nglobs: **/*.{ts,tsx}\nalwaysApply: false\n---\nContent',
+          expectedGlobs: '**/*.{ts,tsx}',
+          expectedAlwaysApply: false,
+        },
+        {
+          name: 'comma',
+          content:
+            '---\ndescription: Rule with glob **/*.ts,**/*.tsx\nglobs: **/*.ts,**/*.tsx\nalwaysApply: false\n---\nContent',
+          expectedGlobs: '**/*.ts,**/*.tsx',
+          expectedAlwaysApply: false,
+        },
+      ];
+
+      for (const fixture of fixtures) {
+        it(`should correctly parse glob: "${fixture.expectedGlobs}"`, () => {
+          const result = parseRuleFileContent(fixture.content);
+          expect(result.data.globs).toBe(fixture.expectedGlobs);
+          expect(result.data.description).toBe(
+            `Rule with glob ${fixture.expectedGlobs}`
+          );
+          expect(result.data.alwaysApply).toBe(fixture.expectedAlwaysApply);
+        });
+      }
+    });
   });
 
   describe('serializeRuleFile()', () => {
@@ -153,7 +204,8 @@ alwaysApply: false
 trigger: manual # This might be some other metadata key in a Cursor file
 ---
 Content`;
-      expect(detectFormat(cursorContent)).toBe('cursor');
+      // If trigger is present, it should be detected as Windsurf, even if alwaysApply is also present.
+      expect(detectFormat(cursorContent)).toBe('windsurf');
     });
 
     it('should return "unknown" if no heuristics match', () => {
@@ -184,6 +236,37 @@ Content`;
       expect(
         detectFormat("Content that doesn't match heuristics", cursorData)
       ).toBe('cursor');
+    });
+
+    it('should detect Cursor for rule with globs/description but missing alwaysApply', () => {
+      const content = `---
+description: A rule that should work without alwaysApply
+globs: src/**/*.js
+---
+This rule is missing alwaysApply but has globs and description.`;
+      const result = parseRuleFileContent(content); // Uses new parsing logic
+      expect(detectFormat(content, result.data)).toBe('cursor');
+    });
+
+    it('should still detect Cursor for problematic glob patterns after parsing fix', () => {
+      const problematicGlobContent = `---
+description: Rule with glob *.test.ts
+globs: *.test.ts
+alwaysApply: false
+---
+Content`;
+      const result = parseRuleFileContent(problematicGlobContent);
+      expect(detectFormat(problematicGlobContent, result.data)).toBe('cursor');
+    });
+
+    it('should detect Windsurf correctly even with problematic glob-like strings in description', () => {
+      const windsurfContent = `---
+trigger: manual
+description: 'This description contains * and other chars: **/*.{js,ts}'
+---
+Content`;
+      const result = parseRuleFileContent(windsurfContent);
+      expect(detectFormat(windsurfContent, result.data)).toBe('windsurf');
     });
   });
 
@@ -296,6 +379,44 @@ Content`;
         globs: 'globs only',
       };
       expect(mapCursorToWindsurf(cursorFm3)).toEqual(expected3);
+    });
+
+    it('should map Cursor with missing alwaysApply (treated as false) and globs to Windsurf "glob"', () => {
+      const cursorFm: CursorFrontMatter = {
+        // alwaysApply is missing
+        globs: 'src/**/*.js',
+        description: 'Missing alwaysApply test',
+      };
+      const expectedWindsurfFm: WindsurfFrontMatter = {
+        trigger: 'glob',
+        globs: 'src/**/*.js',
+        description: 'Missing alwaysApply test',
+      };
+      expect(mapCursorToWindsurf(cursorFm)).toEqual(expectedWindsurfFm);
+    });
+
+    it('should map Cursor with missing alwaysApply (treated as false) and only description to Windsurf "model_decision"', () => {
+      const cursorFm: CursorFrontMatter = {
+        // alwaysApply is missing
+        description: 'Missing alwaysApply, desc only',
+      };
+      const expectedWindsurfFm: WindsurfFrontMatter = {
+        trigger: 'model_decision',
+        description: 'Missing alwaysApply, desc only',
+      };
+      expect(mapCursorToWindsurf(cursorFm)).toEqual(expectedWindsurfFm);
+    });
+
+    it('should map Cursor with missing alwaysApply (treated as false) and no other relevant fields to Windsurf "manual"', () => {
+      const cursorFm: CursorFrontMatter = {
+        // alwaysApply is missing
+        otherKey: 'some data',
+      };
+      const expectedWindsurfFm: WindsurfFrontMatter = {
+        trigger: 'manual',
+        otherKey: 'some data',
+      };
+      expect(mapCursorToWindsurf(cursorFm)).toEqual(expectedWindsurfFm);
     });
   });
 
@@ -708,6 +829,85 @@ Unknown`;
       ).toThrow(
         `Expected Windsurf format but detected cursor for file ${filePath}. Use --force if necessary.`
       );
+    });
+
+    describe('with new fixtures (problematic globs and missing alwaysApply)', () => {
+      const fixturePairs = [
+        {
+          name: 'problematic-glob-asterisk',
+          cursor:
+            '---\ndescription: Rule with glob *\nglobs: *\nalwaysApply: false\n---\nThis rule uses a single asterisk glob.',
+          windsurfExpected:
+            '---\ntrigger: glob\ndescription: Rule with glob *\nglobs: "*"\n---\nThis rule uses a single asterisk glob.\n',
+        },
+        {
+          name: 'problematic-glob-dot',
+          cursor:
+            '---\ndescription: Rule with glob *.test.ts\nglobs: *.test.ts\nalwaysApply: false\n---\nThis rule uses a glob like *.test.ts.',
+          windsurfExpected:
+            '---\ntrigger: glob\ndescription: Rule with glob *.test.ts\nglobs: "*.test.ts"\n---\nThis rule uses a glob like *.test.ts.\n',
+        },
+        {
+          name: 'problematic-glob-doublestar',
+          cursor:
+            '---\ndescription: Rule with glob **/*\nglobs: **/*\nalwaysApply: true\n---\nThis rule uses a glob like **/*.',
+          windsurfExpected:
+            '---\ntrigger: always_on\ndescription: Rule with glob **/*\nglobs: "**/*"\n---\nThis rule uses a glob like **/*.\n',
+        },
+        {
+          name: 'problematic-glob-braces',
+          cursor:
+            '---\ndescription: Rule with glob **/*.{ts,tsx}\nglobs: **/*.{ts,tsx}\nalwaysApply: false\n---\nThis rule uses a glob with braces.',
+          windsurfExpected:
+            '---\ntrigger: glob\ndescription: Rule with glob **/*.{ts,tsx}\nglobs: "**/*.{ts,tsx}"\n---\nThis rule uses a glob with braces.\n',
+        },
+        {
+          name: 'problematic-glob-comma',
+          cursor:
+            '---\ndescription: Rule with glob **/*.ts,**/*.tsx\nglobs: **/*.ts,**/*.tsx\nalwaysApply: false\n---\nThis rule uses a comma-separated glob.',
+          windsurfExpected:
+            '---\ntrigger: glob\ndescription: Rule with glob **/*.ts,**/*.tsx\nglobs: "**/*.ts,**/*.tsx"\n---\nThis rule uses a comma-separated glob.\n',
+        },
+        {
+          name: 'missing-alwaysapply',
+          cursor:
+            '---\ndescription: A rule that should work without alwaysApply\nglobs: src/**/*.js\n---\nThis rule is missing alwaysApply but has globs and description.',
+          windsurfExpected:
+            '---\ntrigger: glob\ndescription: A rule that should work without alwaysApply\nglobs: src/**/*.js\n---\nThis rule is missing alwaysApply but has globs and description.\n',
+        },
+      ];
+
+      for (const pair of fixturePairs) {
+        it(`should correctly convert ${pair.name} from Cursor to Windsurf`, () => {
+          const actualWindsurf = convertRuleContent(pair.cursor, 'cw');
+          const actualData = parseRuleFileContent(actualWindsurf).data;
+          const expectedData = parseRuleFileContent(pair.windsurfExpected).data;
+          expect(actualData).toEqual(expectedData);
+          expect(parseRuleFileContent(actualWindsurf).content.trim()).toBe(
+            parseRuleFileContent(pair.cursor).content.trim()
+          );
+        });
+
+        it(`should correctly convert ${pair.name} from Windsurf to Cursor (round trip)`, () => {
+          const actualCursor = convertRuleContent(pair.windsurfExpected, 'wc');
+          const actualCursorData = parseRuleFileContent(actualCursor).data;
+          const originalCursorData = parseRuleFileContent(pair.cursor).data;
+          // When converting from Windsurf, 'alwaysApply: false' should be added if missing originally
+          const expectedCursorData = { ...originalCursorData };
+          if (
+            expectedCursorData.alwaysApply === undefined &&
+            ['manual', 'glob', 'model_decision'].includes(
+              parseRuleFileContent(pair.windsurfExpected).data.trigger as string
+            )
+          ) {
+            expectedCursorData.alwaysApply = false;
+          }
+          expect(actualCursorData).toEqual(expectedCursorData);
+          expect(parseRuleFileContent(actualCursor).content.trim()).toBe(
+            parseRuleFileContent(pair.windsurfExpected).content.trim()
+          );
+        });
+      }
     });
   });
 });

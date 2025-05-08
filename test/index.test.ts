@@ -3,6 +3,7 @@ import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { convertDirectory, convertFile } from '../src';
+import { parseRuleFileContent } from '../src/mapper'; // Import parser
 
 const fixturesDir = path.join(__dirname, 'fixtures');
 const tempTestDir = path.join(__dirname, 'temp-test-output');
@@ -198,6 +199,207 @@ describe('Windsurf-to-Cursor Converter', () => {
         readFile(path.join(outputDir, 'script.js'))
       ).rejects.toThrow(); // original should not be copied
     });
+
+    it('should correctly auto-detect and convert mixed .md and .mdc files in a directory', async () => {
+      // beforeEach handles setup
+
+      // Get content for Windsurf files (to be converted to Cursor .mdc)
+      const windsurfAgentPath = path.join(fixturesDir, 'agent-windsurf.md');
+      const windsurfAgentContent = (
+        await readFile(windsurfAgentPath, 'utf-8')
+      ).replace(/\r\n/g, '\n');
+      const expectedCursorAgentContent = (
+        await readFile(path.join(fixturesDir, 'agent-cursor.mdc'), 'utf-8')
+      ).replace(/\r\n/g, '\n');
+
+      // Get content for Cursor files (to be converted to Windsurf .md)
+      const cursorAlwaysPath = path.join(fixturesDir, 'always-cursor.mdc');
+      const cursorAlwaysContent = (
+        await readFile(cursorAlwaysPath, 'utf-8')
+      ).replace(/\r\n/g, '\n');
+      const expectedWindsurfAlwaysContent = (
+        await readFile(path.join(fixturesDir, 'always-windsurf.md'), 'utf-8')
+      ).replace(/\r\n/g, '\n');
+
+      // Populate input directory
+      await writeFile(path.join(inputDir, 'ws-agent.md'), windsurfAgentContent);
+      await writeFile(
+        path.join(inputDir, 'cs-always.mdc'),
+        cursorAlwaysContent
+      );
+      await writeFile(
+        path.join(inputDir, 'another-ws.md'), // Another windsurf file
+        await readFile(windsurfManualPath, 'utf-8') // Use existing windsurfManualPath
+      );
+      await writeFile(
+        path.join(inputDir, 'another-cs.mdc'), // Another cursor file
+        await readFile(cursorManualPath, 'utf-8') // Use existing cursorManualPath
+      );
+      await writeFile(
+        path.join(inputDir, 'ignored.txt'),
+        'this should be ignored'
+      );
+
+      // Call convertDirectory without direction or forceFormat options
+      const results = await convertDirectory(inputDir, outputDir);
+
+      // Verify results array
+      expect(results.length).toBe(4); // 4 converted, 0 skipped (ignored.txt is filtered by glob)
+      expect(results.filter((r) => r.status === 'converted').length).toBe(4);
+      expect(results.filter((r) => r.status === 'skipped').length).toBe(0);
+
+      // Check Windsurf to Cursor conversions
+      const convertedWsAgentContent = await readFile(
+        path.join(outputDir, 'ws-agent.mdc'),
+        'utf-8'
+      );
+      expect(convertedWsAgentContent).toEqual(expectedCursorAgentContent);
+
+      const convertedAnotherWsContent = await readFile(
+        path.join(outputDir, 'another-ws.mdc'),
+        'utf-8'
+      );
+      // expectedCursorManualContent is already loaded and normalized in the parent describe
+      expect(convertedAnotherWsContent).toEqual(expectedCursorManualContent);
+
+      // Check Cursor to Windsurf conversions
+      const convertedCsAlwaysContent = await readFile(
+        path.join(outputDir, 'cs-always.md'),
+        'utf-8'
+      );
+      expect(convertedCsAlwaysContent).toEqual(expectedWindsurfAlwaysContent);
+
+      const convertedAnotherCsContent = await readFile(
+        path.join(outputDir, 'another-cs.md'),
+        'utf-8'
+      );
+      const expectedWindsurfManualContent = // Load and normalize this one
+        (await readFile(windsurfManualPath, 'utf-8')).replace(/\r\n/g, '\n');
+      expect(convertedAnotherCsContent).toEqual(expectedWindsurfManualContent);
+
+      // Check that the other file was ignored
+      await expect(
+        readFile(path.join(outputDir, 'ignored.txt'))
+      ).rejects.toThrow();
+      // Ensure no unexpected files were created
+      const outputFiles = await readdir(outputDir);
+      expect(outputFiles.length).toBe(4); // Only the 4 converted files
+    });
+  });
+
+  describe('Handling problematic globs and missing alwaysApply', () => {
+    const fixturePairs = [
+      {
+        name: 'problematic-glob-asterisk',
+        cursor: 'problematic-glob-asterisk-cursor.mdc',
+        windsurf: 'problematic-glob-asterisk-windsurf.md',
+      },
+      {
+        name: 'problematic-glob-dot',
+        cursor: 'problematic-glob-dot-cursor.mdc',
+        windsurf: 'problematic-glob-dot-windsurf.md',
+      },
+      {
+        name: 'problematic-glob-doublestar',
+        cursor: 'problematic-glob-doublestar-cursor.mdc',
+        windsurf: 'problematic-glob-doublestar-windsurf.md',
+      },
+      {
+        name: 'problematic-glob-braces',
+        cursor: 'problematic-glob-braces-cursor.mdc',
+        windsurf: 'problematic-glob-braces-windsurf.md',
+      },
+      {
+        name: 'problematic-glob-comma',
+        cursor: 'problematic-glob-comma-cursor.mdc',
+        windsurf: 'problematic-glob-comma-windsurf.md',
+      },
+      {
+        name: 'missing-alwaysapply',
+        cursor: 'missing-alwaysapply-cursor.mdc',
+        windsurf: 'missing-alwaysapply-windsurf.md',
+      },
+    ];
+
+    for (const pair of fixturePairs) {
+      const cursorPath = path.join(fixturesDir, pair.cursor);
+      const windsurfPath = path.join(fixturesDir, pair.windsurf);
+      const outputCursorPath = path.join(
+        tempTestDir,
+        `${pair.name}-output.mdc`
+      );
+      const outputWindsurfPath = path.join(
+        tempTestDir,
+        `${pair.name}-output.md`
+      );
+
+      it(`should convert ${pair.name} from Cursor to Windsurf`, async () => {
+        await rm(outputWindsurfPath, { force: true }); // Clean before test
+
+        // Get expected data by parsing the target fixture
+        const expectedWindsurfContentStr = await readFile(
+          windsurfPath,
+          'utf-8'
+        );
+        const { data: expectedData, content: expectedContent } =
+          parseRuleFileContent(expectedWindsurfContentStr);
+
+        // Perform conversion
+        await convertFile(cursorPath, outputWindsurfPath, { direction: 'cw' });
+
+        // Parse the actual result
+        const actualWindsurfContentStr = await readFile(
+          outputWindsurfPath,
+          'utf-8'
+        );
+        const { data: actualData, content: actualContent } =
+          parseRuleFileContent(actualWindsurfContentStr);
+
+        // Compare parsed data and content
+        expect(actualData).toEqual(expectedData);
+        expect(actualContent.trim()).toEqual(expectedContent.trim());
+      });
+
+      it(`should convert ${pair.name} from Windsurf to Cursor`, async () => {
+        await rm(outputCursorPath, { force: true }); // Clean before test
+
+        // Get original cursor data for comparison baseline
+        const originalCursorContentStr = await readFile(cursorPath, 'utf-8');
+        const { data: originalCursorData, content: originalContent } =
+          parseRuleFileContent(originalCursorContentStr);
+
+        // Define the expected data after WC conversion (may include alwaysApply: false)
+        const expectedCursorData = { ...originalCursorData };
+        // Read the Windsurf input to check its trigger type
+        const windsurfInputContentStr = await readFile(windsurfPath, 'utf-8');
+        const { data: windsurfInputData } = parseRuleFileContent(
+          windsurfInputContentStr
+        );
+        // Add alwaysApply: false if it was missing and trigger wasn't always_on
+        if (
+          expectedCursorData.alwaysApply === undefined &&
+          windsurfInputData.trigger !== 'always_on'
+        ) {
+          expectedCursorData.alwaysApply = false;
+        }
+
+        // Perform conversion
+        await convertFile(windsurfPath, outputCursorPath, { direction: 'wc' });
+
+        // Parse the actual result
+        const actualCursorContentStr = await readFile(
+          outputCursorPath,
+          'utf-8'
+        );
+        const { data: actualData, content: actualContent } =
+          parseRuleFileContent(actualCursorContentStr);
+
+        // Compare parsed data and content
+        expect(actualData).toEqual(expectedCursorData);
+        // Content should match the original *cursor* content body
+        expect(actualContent.trim()).toEqual(originalContent.trim());
+      });
+    }
   });
 });
 
@@ -568,7 +770,7 @@ describe('CLI (cuws)', () => {
     });
 
     it('should show help if stdin is empty', async () => {
-      const { stdout, stderr, exitCode } = await new Promise<{
+      const { stderr, exitCode } = await new Promise<{
         stdout: string;
         stderr: string;
         exitCode: number | null;

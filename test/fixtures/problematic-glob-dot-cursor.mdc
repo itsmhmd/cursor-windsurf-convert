@@ -1,0 +1,6 @@
+---
+description: Rule with glob *.test.ts
+globs: *.test.ts
+alwaysApply: false
+---
+This rule uses a glob like *.test.ts.

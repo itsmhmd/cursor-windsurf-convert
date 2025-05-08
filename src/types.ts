@@ -4,7 +4,7 @@
 export interface CursorFrontMatter {
   description?: string;
   globs?: string; // Comma-separated string of glob patterns
-  alwaysApply: boolean;
+  alwaysApply?: boolean; // Changed to optional
   [key: string]: unknown; // Allows for other arbitrary keys
 }
 

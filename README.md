@@ -54,30 +54,54 @@
 
 ## 🚀 Quick Start
 
+The easiest way to use `cuws` without a global installation is with `npx`:
+
 ```bash
-# Global install
+# Convert a single file (Cursor ➜ Windsurf) using npx
+npx cursor-windsurf-convert -i .cursor/rules/auth.mdc -o .windsurf/rules/auth.md
+
+# Pipe via stdin/stdout using npx
+git show HEAD:my-rule.mdc | npx cursor-windsurf-convert --reverse > my-rule-cursor.mdc
+
+# Convert all Cursor rules from '.cursor/rules' to Windsurf rules in '.windsurf/rules'
+npx cursor-windsurf-convert -d .cursor/rules -o .windsurf/rules
+
+# Convert all Windsurf rules from '.windsurf/rules' back to Cursor in '.cursor/rules-backup'
+npx cursor-windsurf-convert -d .windsurf/rules -o .cursor/rules-backup --reverse
+```
+
+Alternatively, if you prefer a global installation for frequent use:
+```bash
+# Global install (optional)
 npm install -g cursor-windsurf-convert
-
-# Convert a single file (Cursor ➜ Windsurf)
-cuws -i .cursor/rules/auth.mdc -o .windsurf/rules/auth.md
-
-# Pipe via stdin/stdout
-git show HEAD:my-rule.mdc | cuws --reverse > my-rule-cursor.mdc
-
-# Batch convert an entire repo (dry‑run first, output to 'converted-rules' directory)
-cuws -d . -o ./converted-rules --reverse --dry-run
+# Then use 'cuws' directly:
+# cuws -i .cursor/rules/another.mdc -o .windsurf/rules/another.md
 ```
 
 ---
 
 ## 📦 Installation
 
-```bash
-# Use npx (no install)
-npx cursor-windsurf-convert --help
+While `npx cursor-windsurf-convert ...` is recommended for quick, one-off uses (see [Quick Start](#-quick-start)), you can also install `cuws`:
 
-# Or add as a dev dependency
-yarn add -D cursor-windsurf-convert # or npm i -D ...
+**As a project dependency:**
+```bash
+# Using pnpm
+pnpm add -D cursor-windsurf-convert
+
+# Using yarn
+yarn add -D cursor-windsurf-convert
+
+# Using npm
+npm install -D cursor-windsurf-convert
+```
+Then you can run it via `pnpm cuws ...` (if using pnpm) or add it to your `package.json` scripts.
+
+**Globally (for frequent use):**
+```bash
+npm install -g cursor-windsurf-convert
+# Now you can use 'cuws' directly anywhere:
+# cuws --help
 ```
 
 > **Node ≥ 18** required (tested on 18 & 20).

@@ -1,0 +1,6 @@
+---
+description: Rule with glob **/*
+globs: **/*
+alwaysApply: true
+---
+This rule uses a glob like **/*.

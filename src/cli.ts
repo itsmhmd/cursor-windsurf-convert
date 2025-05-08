@@ -8,7 +8,11 @@ import {
   convertFile,
   convertString,
 } from './index';
-import type { ConversionDirection, ConvertDirectoryResult } from './types';
+import type {
+  ConversionDirection,
+  ConvertDirectoryResult,
+  ConvertFileOptions,
+} from './types';
 
 // Define an interface for options for better type checking, although commander provides its own types
 interface CLIOptions {
@@ -23,9 +27,6 @@ interface CLIOptions {
 
 // Helper function for consistent error handling
 function exitWithError(message: string, code?: string): never {
-  console.error(
-    `DEBUG [exitWithError]: Called with message: ${message}, code: ${code}`
-  ); // DEBUG LINE
   const prefix = code ? `Error (${code})` : 'Error';
   console.error(`${prefix}: ${message}`);
   console.error('\nRun with --help for usage information.');
@@ -297,25 +298,40 @@ program
           }
         } else {
           // Actual directory conversion
-          const dirOptions = { direction, forceFormat, dryRun: false }; // DEBUG LINE
+          // Construct options specifically for convertDirectory call
+          const dirOptionsForConvert: ConvertFileOptions = { dryRun }; // Start fresh
+
+          // Set direction only if -r was explicitly used
+          if (program.getOptionValueSource('reverse') === 'cli') {
+            dirOptionsForConvert.direction = 'wc';
+          }
+          // Set forceFormat only if --force was explicitly used
+          if (
+            program.getOptionValueSource('force') === 'cli' &&
+            options.force !== undefined
+          ) {
+            dirOptionsForConvert.forceFormat = options.force; // Use options.force directly
+            // If direction wasn't already set by an explicit -r, infer it from --force
+            if (!dirOptionsForConvert.direction) {
+              dirOptionsForConvert.direction =
+                options.force === 'cursor' ? 'cw' : 'wc';
+            }
+          }
+          // If neither -r nor --force was explicitly set by the user,
+          // dirOptionsForConvert.direction and dirOptionsForConvert.forceFormat remain undefined,
+          // allowing convertDirectory to auto-detect per file.
+
           if (typeof dirInput !== 'string' || typeof finalOutput !== 'string') {
             // This should be unreachable due to prior checks but satisfies strict type analysis
             return exitWithError(
               'Internal error: Missing directory paths for actual directory mode.'
             );
           }
-          console.log(
-            `DEBUG [CLI]: Calling convertDirectory with dirInput: ${dirInput}, finalOutput: ${finalOutput}, options:`,
-            dirOptions
-          ); // DEBUG LINE
           const results: ConvertDirectoryResult[] = await convertDirectory(
             dirInput,
             finalOutput,
-            dirOptions
+            dirOptionsForConvert
           );
-          console.log(
-            `DEBUG [CLI]: convertDirectory returned ${results.length} results.`
-          ); // DEBUG LINE
 
           let convertedCount = 0;
           let skippedCount = 0;
@@ -416,7 +432,6 @@ program
       } // Closes 'try' block for execution logic
     } catch (error) {
       // Catch errors from convertFile/convertDirectory during actual execution
-      console.error('DEBUG: Caught error in main action handler:', error); // DEBUG LINE
       if (error instanceof ConversionError) {
         // Use exitWithError for consistent formatting
         return exitWithError(error.message, error.code);
@@ -426,7 +441,7 @@ program
       }
       // Default case for unknown errors
       return exitWithError('An unexpected error occurred.');
-    } // Closes 'catch' block
+    }
   }); // This closes the .action() call
 
 // Add custom error handling for parsing errors (like unknown options)

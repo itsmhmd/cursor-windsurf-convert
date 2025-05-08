@@ -1,0 +1,6 @@
+---
+description: Rule with glob **/*.{ts,tsx}
+globs: **/*.{ts,tsx}
+alwaysApply: false
+---
+This rule uses a glob with braces.
