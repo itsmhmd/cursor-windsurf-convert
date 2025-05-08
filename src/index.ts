@@ -1,5 +1,13 @@
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
-import { basename, dirname, extname, join, parse, relative } from 'node:path';
+import {
+  basename,
+  dirname,
+  extname,
+  join,
+  parse,
+  relative,
+  resolve,
+} from 'node:path';
 import fastGlob from 'fast-glob';
 import { convertRuleContent, detectFormat } from './mapper';
 import {
@@ -230,10 +238,12 @@ export async function convertDirectory(
   }
 
   // Glob for both .md and .mdc files
-  const globPattern = join(sourceDir, '**/*.{md,mdc}');
+  const absoluteSourceDir = resolve(sourceDir); // Resolve to absolute path
+  const globPattern = join(absoluteSourceDir, '**/*.{md,mdc}');
   const potentialFiles = await fastGlob(globPattern, {
     onlyFiles: true,
     dot: true,
+    absolute: true, // Ensure fastGlob returns absolute paths
   });
 
   if (potentialFiles.length === 0) {
@@ -241,7 +251,8 @@ export async function convertDirectory(
   }
 
   for (const sourceFilePath of potentialFiles) {
-    const relativePath = relative(sourceDir, sourceFilePath);
+    // sourceFilePath is now absolute, ensure relativePath calculation is correct
+    const relativePath = relative(absoluteSourceDir, sourceFilePath);
     const parsedSourcePath = parse(sourceFilePath);
 
     let fileSpecificDirection: ConversionDirection | undefined =

@@ -130,19 +130,14 @@ program
             chunks.push(chunk);
           }
           const stdinContent = Buffer.concat(chunks).toString('utf-8');
-          if (stdinContent) {
-            // Call convertString with forceFormat as the 3rd argument
-            const convertedContent = convertString(
-              stdinContent,
-              direction,
-              forceFormat
-            );
-            process.stdout.write(convertedContent);
-          } else {
-            // Handle empty stdin case if necessary, maybe show help?
-            program.help({ error: true }); // Show help if stdin is empty
-            // NOTE: program.help({ error: true }) should exit, but we add else for clarity
-          }
+          // Always attempt conversion. convertString will throw E01 for empty string,
+          // which will be caught below and handled by exitWithError.
+          const convertedContent = convertString(
+            stdinContent,
+            direction,
+            forceFormat
+          );
+          process.stdout.write(convertedContent);
         } catch (e) {
           // Handle errors during stdin read or conversion
           if (e instanceof ConversionError) {

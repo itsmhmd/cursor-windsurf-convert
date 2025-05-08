@@ -517,38 +517,42 @@ describe('CLI (cuws)', () => {
     });
 
     it('should convert stdin to stdout', async () => {
-      // Use exec directly for piping stdin
-      const command = `echo "${windsurfManualContent.replace(/"/g, '\\"')}" | node "${path.resolve(cliPath)}" -r`;
       const { stdout, stderr, exitCode } = await new Promise<{
         stdout: string;
         stderr: string;
         exitCode: number | null;
       }>((resolve) => {
-        const child = exec(command);
+        const child = exec(`node "${path.resolve(cliPath)}" -r`, {
+          env: { ...process.env },
+        });
         let stdoutData = '';
         let stderrData = '';
+
         child.stdout?.on('data', (data) => {
           stdoutData += data;
         });
         child.stderr?.on('data', (data) => {
           stderrData += data;
         });
-        child.on('close', (code) =>
-          resolve({ stdout: stdoutData, stderr: stderrData, exitCode: code })
-        );
-        child.on('error', (err) =>
+        child.on('close', (code) => {
+          resolve({ stdout: stdoutData, stderr: stderrData, exitCode: code });
+        });
+        child.on('error', (err) => {
           resolve({
             stdout: stdoutData,
             stderr: stderrData + err.message,
             exitCode: 1,
-          })
-        );
+          });
+        });
+
+        // Write to stdin
+        child.stdin?.write(windsurfManualContent);
+        child.stdin?.end();
       });
 
       expect(stderr).toBe('');
       expect(exitCode).toBe(0);
-      // Trim stdout because echo might add a newline
-      expect(stdout.trim()).toEqual(expectedCursorManualContent.trim()); // Use expectedCursorManualContent
+      expect(stdout.trim()).toEqual(expectedCursorManualContent.trim());
     });
 
     it('should convert file input to stdout (using -i without -o)', async () => {
@@ -564,35 +568,40 @@ describe('CLI (cuws)', () => {
     });
 
     it('should show help if stdin is empty', async () => {
-      // Use exec directly for piping stdin
-      const command = `echo "" | node "${path.resolve(cliPath)}" -r`;
-      const { stderr, exitCode } = await new Promise<{
+      const { stdout, stderr, exitCode } = await new Promise<{
         stdout: string;
         stderr: string;
         exitCode: number | null;
       }>((resolve) => {
-        const child = exec(command);
+        const child = exec(`node "${path.resolve(cliPath)}" -r`, {
+          env: { ...process.env },
+        });
         let stdoutData = '';
         let stderrData = '';
+
         child.stdout?.on('data', (data) => {
           stdoutData += data;
         });
         child.stderr?.on('data', (data) => {
           stderrData += data;
         });
-        child.on('close', (code) =>
-          resolve({ stdout: stdoutData, stderr: stderrData, exitCode: code })
-        );
-        child.on('error', (err) =>
+        child.on('close', (code) => {
+          resolve({ stdout: stdoutData, stderr: stderrData, exitCode: code });
+        });
+        child.on('error', (err) => {
           resolve({
             stdout: stdoutData,
             stderr: stderrData + err.message,
             exitCode: 1,
-          })
-        );
+          });
+        });
+
+        // Write empty string to stdin and close it
+        child.stdin?.write('');
+        child.stdin?.end();
       });
 
-      // Expect the specific error message printed by program.help({ error: true })
+      // Expect the specific error message
       expect(stderr).toContain(
         'Error (E01): Could not determine source format.'
       );
