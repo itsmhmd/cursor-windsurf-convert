@@ -61,6 +61,7 @@ Content`;
       if (errorThrown) {
         // Updated to match the more specific error message format
         expect(errorThrown.message).toMatch(
+          // biome-ignore lint/performance/useTopLevelRegex: nevermind
           /^Invalid YAML front-matter\. .* at line \d+\. Original error: .+/
         );
         expect(errorThrown.code).toBe('E03');
@@ -83,6 +84,7 @@ Content`;
       if (errorThrown) {
         // Updated to match the more specific error message format including file path
         expect(errorThrown.message).toMatch(
+          // biome-ignore lint/performance/useTopLevelRegex: nevermind
           /^Invalid YAML front-matter in file test\/invalid\.md\. .* at line \d+\. Original error: .+/
         );
         expect(errorThrown.code).toBe('E03');

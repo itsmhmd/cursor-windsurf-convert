@@ -1,5 +1,5 @@
 import matter from 'gray-matter';
-import yaml from 'js-yaml'; // Import js-yaml to access its schemas
+import yaml, { type DumpOptions } from 'js-yaml'; // Import js-yaml to access its schemas
 import type {
   ConversionDirection,
   CursorFrontMatter,
@@ -19,7 +19,6 @@ const WINDSURF_TRIGGER_KEY = 'trigger:';
  * @throws {ConversionError} if YAML parsing fails (E03).
  */
 
-// biome-ignore lint/complexity/noExcessiveCognitiveComplexity: shrug
 export function parseRuleFileContent(
   fileContent: string,
   filePath?: string
@@ -36,13 +35,15 @@ export function parseRuleFileContent(
       //                  It captures any character non-greedily until the end of the line.
       // - \s*$: Matches optional trailing whitespace at the end of the line.
       // This regex is imperfect for complex cases but aims to catch common unquoted globs.
+      // biome-ignore lint/performance/useTopLevelRegex: nevermind
       const globRegex = /^(globs:\s*)(?!['"])([^#\n][^\n]*?)\s*$/m;
       const match = globRegex.exec(rawFrontMatterString);
 
-      if (match && match[2]) {
+      if (match?.[2]) {
         const globValue = match[2].trim();
         // Check if the glob value contains characters that might be misinterpreted by YAML
         // and is not already quoted.
+        // biome-ignore lint/performance/useTopLevelRegex: nevermind
         const specialChars = /[*:{}[\],]/; // Characters that often cause issues
         const isQuoted =
           (globValue.startsWith("'") && globValue.endsWith("'")) ||
@@ -136,9 +137,53 @@ export function serializeRuleFile(
 ): string {
   // Ensure consistent key order for determinism if possible, though gray-matter might not guarantee it.
   // For now, direct stringification is used.
-  // biome-ignore lint/suspicious/noExplicitAny: gray-matter's stringify expects `{[key: string]: any;}` for data.
-  const rawOutput = matter.stringify(content, frontMatter as any);
-  return rawOutput.replace(/\r\n/g, '\n');
+
+  // Custom stringify function for js-yaml to control its output
+  const customYamlStringify = (data: object): string => {
+    const dumpOptions: DumpOptions = {
+      lineWidth: -1,
+      forceQuotes: false, // Be explicit about not forcing quotes
+      styles: {
+        '!!str': 'plain', // Force all strings to plain style
+      },
+      // noCompatMode: true, // Could be useful for other style controls if needed
+    };
+    // Ensure data is not null/undefined before dumping
+    return yaml.dump(data ?? {}, dumpOptions);
+  };
+
+  // Dummy parser to satisfy gray-matter's engine type definition for the 'parse' property.
+  // This parser won't actually be called by matter.stringify.
+  const dummyYamlParse = (input: string): object => {
+    try {
+      const result = yaml.load(input);
+      // Ensure an object is returned, even for non-object YAML or errors
+      return typeof result === 'object' && result !== null ? result : {};
+    } catch {
+      return {}; // Return empty object on error to satisfy type
+    }
+  };
+
+  // Use the engines option to provide the custom stringifier
+  const rawOutput = matter.stringify(content, frontMatter, {
+    engines: {
+      yaml: {
+        parse: dummyYamlParse, // Provide a compliant parser
+        stringify: customYamlStringify, // Use our custom stringifier
+      },
+    },
+    language: 'yaml', // Explicitly use the 'yaml' engine defined above
+  });
+
+  // Post-process to remove quotes specifically from the 'globs:' line if present
+  // This handles cases where js-yaml still quotes globs despite 'plain' style attempt.
+  const processedOutput = rawOutput.replace(
+    // biome-ignore lint/performance/useTopLevelRegex: nevermind
+    /^globs:\s*(['"])(.*?)\1\s*$/m,
+    'globs: $2'
+  );
+
+  return processedOutput.replace(/\r\n/g, '\n');
 }
 
 /**
