@@ -14,7 +14,9 @@ describe('Windsurf-to-Cursor Converter', () => {
   let expectedCursorManualContent: string;
 
   beforeAll(async () => {
-    expectedCursorManualContent = await readFile(cursorManualPath, 'utf-8');
+    expectedCursorManualContent = (
+      await readFile(cursorManualPath, 'utf-8')
+    ).replace(/\r\n/g, '\n');
     // Create a temporary directory for test outputs
     await mkdir(tempTestDir, { recursive: true });
   });
@@ -88,10 +90,9 @@ describe('Windsurf-to-Cursor Converter', () => {
       // Copy some fixture files to the temp input directory
       const windsurfAgentPath = path.join(fixturesDir, 'agent-windsurf.md');
       const cursorAgentPath = path.join(fixturesDir, 'agent-cursor.mdc');
-      const expectedCursorAgentContent = await readFile(
-        cursorAgentPath,
-        'utf-8'
-      );
+      const expectedCursorAgentContent = (
+        await readFile(cursorAgentPath, 'utf-8')
+      ).replace(/\r\n/g, '\n');
 
       await writeFile(
         path.join(inputDir, 'manual-windsurf.md'),
@@ -206,7 +207,10 @@ describe('CLI (cuws)', () => {
 
   beforeAll(async () => {
     // Load content needed specifically for CLI tests
-    expectedCursorManualContent = await readFile(cursorManualPath, 'utf-8');
+    // This variable is re-declared in this scope, so it needs normalization here too.
+    expectedCursorManualContent = (
+      await readFile(cursorManualPath, 'utf-8')
+    ).replace(/\r\n/g, '\n');
   });
 
   const execCli = (
@@ -318,7 +322,9 @@ describe('CLI (cuws)', () => {
 
     beforeAll(async () => {
       const cursorAgentPath = path.join(fixturesDir, 'agent-cursor.mdc');
-      expectedCursorAgentContent = await readFile(cursorAgentPath, 'utf-8');
+      expectedCursorAgentContent = (
+        await readFile(cursorAgentPath, 'utf-8')
+      ).replace(/\r\n/g, '\n');
     });
 
     beforeEach(async () => {
@@ -496,7 +502,18 @@ describe('CLI (cuws)', () => {
     let windsurfManualContent: string;
 
     beforeAll(async () => {
-      windsurfManualContent = await readFile(inputFile, 'utf-8');
+      // Normalize windsurfManualContent as well if it's used in comparisons
+      // where the other side is normalized or expected to be LF.
+      // The `echo` command on Windows might produce CRLF.
+      // However, the direct comparison is `stdout.trim()).toEqual(expectedCursorManualContent.trim())`
+      // and expectedCursorManualContent is already normalized.
+      // So, this specific one might not need normalization if `echo` on CI produces LF,
+      // or if `trim()` handles mixed line endings well enough before comparison.
+      // For safety and consistency, let's normalize it if it's directly used in an echo.
+      windsurfManualContent = (await readFile(inputFile, 'utf-8')).replace(
+        /\r\n/g,
+        '\n'
+      );
     });
 
     it('should convert stdin to stdout', async () => {
