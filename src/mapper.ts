@@ -1,5 +1,5 @@
 import matter from 'gray-matter';
-// Reverted js-yaml import - using gray-matter default parser
+import yaml from 'js-yaml'; // Import js-yaml to access its schemas
 import type {
   ConversionDirection,
   CursorFrontMatter,
@@ -25,34 +25,61 @@ export function parseRuleFileContent(
   filePath?: string
 ): { data: Record<string, unknown>; content: string } {
   try {
-    // Pre-process to quote problematic 'globs' values if unquoted
-    let processedContent = fileContent;
-    // biome-ignore lint/performance/useTopLevelRegex: test
-    const fmRegex = /^---\s*([\s\S]*?)\s*---/;
-    const match = fileContent.match(fmRegex);
-    if (match?.[1]) {
-      const fmContent = match[1];
-      // biome-ignore lint/performance/useTopLevelRegex: test
-      const globRegex = /^(globs\s*:\s*)(.*)$/m;
-      const globMatch = fmContent.match(globRegex);
-      if (globMatch?.[2]) {
-        const globValue = globMatch[2].trim();
-        // Check if unquoted and contains special chars often misinterpreted
-        // biome-ignore lint/performance/useTopLevelRegex: test
-        if (!/^['"].*['"]$/.test(globValue) && /[*{}?,:]/.test(globValue)) {
-          // Add quotes (using single quotes for simplicity)
+    let originalUnquotedGlobValue: string | undefined;
+
+    const customYamlEngine = (rawFrontMatterString: string): object => {
+      let processedFrontMatterString = rawFrontMatterString;
+
+      // Regex to find unquoted globs:
+      // - ^(globs:\s*): Matches "globs:" at the start of a line, followed by optional whitespace.
+      // - ([^"'\s].*?): Captures the glob value. It must not start with a quote or whitespace.
+      //                  It captures any character non-greedily until the end of the line.
+      // - \s*$: Matches optional trailing whitespace at the end of the line.
+      // This regex is imperfect for complex cases but aims to catch common unquoted globs.
+      const globRegex = /^(globs:\s*)(?!['"])([^#\n][^\n]*?)\s*$/m;
+      const match = globRegex.exec(rawFrontMatterString);
+
+      if (match && match[2]) {
+        const globValue = match[2].trim();
+        // Check if the glob value contains characters that might be misinterpreted by YAML
+        // and is not already quoted.
+        const specialChars = /[*:{}[\],]/; // Characters that often cause issues
+        const isQuoted =
+          (globValue.startsWith("'") && globValue.endsWith("'")) ||
+          (globValue.startsWith('"') && globValue.endsWith('"'));
+
+        if (!isQuoted && specialChars.test(globValue)) {
+          originalUnquotedGlobValue = globValue; // Store the original unquoted value
+          // Temporarily quote the glob value for parsing
           const quotedGlobValue = `'${globValue.replace(/'/g, "''")}'`; // Escape single quotes within
-          const newFmContent = fmContent.replace(
+          processedFrontMatterString = rawFrontMatterString.replace(
             globRegex,
             `$1${quotedGlobValue}`
           );
-          processedContent = fileContent.replace(fmContent, newFmContent);
         }
       }
-    }
 
-    // Use default gray-matter parsing on potentially processed content
-    const { data, content } = matter(processedContent);
+      const parsedData = yaml.load(processedFrontMatterString, {
+        schema: yaml.JSON_SCHEMA, // Keep JSON_SCHEMA, pre-quoting might make it work
+      }) as Record<string, unknown> | undefined; // yaml.load can return undefined for empty input
+
+      // If we temporarily quoted the glob, restore the original unquoted value
+      // Use optional chaining for parsedData as it can be undefined
+      if (originalUnquotedGlobValue && parsedData?.globs) {
+        parsedData.globs = originalUnquotedGlobValue;
+      }
+
+      // Ensure an object is always returned, as gray-matter expects.
+      // If parsedData is undefined (e.g. empty front-matter), return an empty object.
+      return parsedData || {};
+    };
+
+    const { data, content } = matter(fileContent, {
+      engines: {
+        yaml: customYamlEngine,
+      },
+    });
+
     return { data, content };
   } catch (e: unknown) {
     let message = 'Unknown YAML parsing error';
@@ -80,8 +107,18 @@ export function parseRuleFileContent(
       lineInfo = ` at line ${(e.mark as { line: number }).line + 1}`;
     }
     const pathInfo = filePath ? ` in file ${filePath}` : '';
+    let specificIssue =
+      "A colon ':' is likely missing or there's a general syntax error";
+    if (message.includes('a colon is missed')) {
+      specificIssue =
+        "A colon ':' is missing in a key-value pair, or a value is missing after a colon";
+    } else if (message.includes('mapping values are not allowed here')) {
+      specificIssue =
+        'Indentation or a missing colon might be the issue; mapping values are not allowed in this context';
+    }
+
     throw new ConversionError(
-      `YAML front-matter parse failed${lineInfo}${pathInfo}: ${message}`,
+      `Invalid YAML front-matter${pathInfo}. ${specificIssue}${lineInfo}. Original error: ${message}`,
       'E03'
     );
   }

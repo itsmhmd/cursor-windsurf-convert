@@ -59,8 +59,10 @@ Content`;
       }
       expect(errorThrown).toBeInstanceOf(ConversionError);
       if (errorThrown) {
-        // biome-ignore lint/performance/useTopLevelRegex: test case
-        expect(errorThrown.message).toMatch(/YAML front-matter parse failed/);
+        // Updated to match the more specific error message format
+        expect(errorThrown.message).toMatch(
+          /^Invalid YAML front-matter\. .* at line \d+\. Original error: .+/
+        );
         expect(errorThrown.code).toBe('E03');
       }
     });
@@ -71,12 +73,23 @@ Content`;
 ---
 Content`;
       const filePath = 'test/invalid.md';
-      expect(() => parseRuleFileContent(content, filePath)).toThrow(
-        `YAML front-matter parse failed at line 2 in file ${filePath}:`
-      );
+      let errorThrown: ConversionError | undefined;
+      try {
+        parseRuleFileContent(content, filePath);
+      } catch (e) {
+        errorThrown = e as ConversionError;
+      }
+      expect(errorThrown).toBeInstanceOf(ConversionError);
+      if (errorThrown) {
+        // Updated to match the more specific error message format including file path
+        expect(errorThrown.message).toMatch(
+          /^Invalid YAML front-matter in file test\/invalid\.md\. .* at line \d+\. Original error: .+/
+        );
+        expect(errorThrown.code).toBe('E03');
+      }
     });
 
-    describe('with problematic globs (using JSON_SCHEMA)', () => {
+    describe('with problematic globs', () => {
       const fixtures = [
         {
           name: 'asterisk',
@@ -204,7 +217,16 @@ alwaysApply: false
 trigger: manual # This might be some other metadata key in a Cursor file
 ---
 Content`;
-      // If trigger is present, it should be detected as Windsurf, even if alwaysApply is also present.
+      // If "trigger:" is not in the first 32 chars, and "alwaysApply" is boolean, it's Cursor.
+      // If "trigger:" IS in the first 32 chars, it's Windsurf.
+      // The current logic in detectFormat:
+      // 1. Checks for "trigger:" in first 512 chars -> windsurf
+      // 2. If not, parses. If 'trigger' in data -> windsurf
+      // 3. If not, if 'alwaysApply' is boolean -> cursor
+      // This test case has 'trigger: manual' which will be found by the parser.
+      // The comment implies 'alwaysApply' should take precedence if 'trigger:' is not in the first 32.
+      // Let's adjust the test to reflect the actual logic or clarify the comment.
+      // Given the current detectFormat, this will be 'windsurf' because 'trigger' key exists.
       expect(detectFormat(cursorContent)).toBe('windsurf');
     });
 

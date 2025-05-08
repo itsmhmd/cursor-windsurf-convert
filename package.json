@@ -13,7 +13,12 @@
     "url": "git+https://github.com/gmickel/cursor-windsurf-convert.git"
   },
   "bugs": "https://github.com/gmickel/cursor-windsurf-convert/issues",
-  "keywords": ["cursor", "windsurf", "rules", "converter"],
+  "keywords": [
+    "cursor",
+    "windsurf",
+    "rules",
+    "converter"
+  ],
   "sideEffects": false,
   "exports": {
     ".": "./dist/index.mjs",
@@ -25,7 +30,9 @@
   "main": "./dist/index.mjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.mts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "unbuild",
     "dev": "unbuild --stub",
@@ -42,8 +49,10 @@
     "@antfu/ni": "catalog:cli",
     "@antfu/utils": "catalog:inlined",
     "@biomejs/biome": "^1.9.4",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "catalog:types",
     "bumpp": "catalog:cli",
+    "js-yaml": "^4.1.0",
     "tinyexec": "catalog:utils",
     "tsx": "catalog:cli",
     "typescript": "catalog:cli",

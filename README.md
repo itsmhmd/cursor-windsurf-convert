@@ -214,6 +214,26 @@ PRs welcome! Check the [open issues](https://github.com/gmickel/cursor-windsurf-
 | ---------------------------------- | ---------------------------------------------- |
 | *Does it change my markdown body?* | Nope. Only the YAML/MD header is mapped.       |
 | *Can I embed this in my own tool?* | Absolutely—import the TS API.                  |
+| *What if I get YAML errors?*       | `cuws` uses a strict YAML parser. See [YAML Parsing Strictness](#yaml-parsing-strictness) below. |
+
+---
+
+## YAML Parsing Strictness
+
+`cuws` uses a strict YAML parser for the front-matter in rule files. This ensures that conversions are accurate and that your rule files adhere to valid YAML syntax. If you encounter errors related to YAML parsing (often error code `E03`), please check the following common pitfalls:
+
+*   **Missing Colons**: Ensure every key-value pair has a colon separating the key and the value.
+    *   Incorrect: `alwaysApply true`
+    *   Correct: `alwaysApply: true`
+*   **Missing Values**: Ensure that if a key has a colon, it also has a value following it.
+    *   Incorrect: `description:` (with nothing after the colon)
+    *   Correct: `description: My rule description` or remove the line if `description` is not needed.
+*   **Indentation**: YAML is sensitive to indentation. Ensure that your indentation is consistent and correctly represents the structure of your metadata.
+*   **Special Characters in Unquoted Strings**: If your string values contain special characters (e.g., `:`, `{`, `}`, `[`, `]`, `,`, `&`, `*`, `#`, `?`, `|`, `-`, `<`, `>`, `=`, `!`, `%`, `@`, `` ` ``), they might need to be quoted.
+    *   Example: `title: My Rule: A Detailed Look` should be `title: 'My Rule: A Detailed Look'` or `title: "My Rule: A Detailed Look"`.
+    *   `cuws` attempts to auto-quote problematic `globs` values during parsing, but other fields might require manual quoting if they contain special characters that could be misinterpreted by the YAML parser.
+
+The error messages provided by `cuws` for YAML parsing issues will typically include the line number and a snippet from the original parser to help you locate the problem.
 
 ---
 
