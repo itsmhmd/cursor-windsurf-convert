@@ -36,19 +36,19 @@
 * **Fast** – converts a 1 kB rule in < 50 ms. Blink and you’ll miss it.
 * **Lossless metadata mapping** – front‑matter stays intact, content unchanged.
 * **CI‑ready** – deterministic, non‑interactive, exit codes you can trust.
-* **Tiny footprint** – zero deps in runtime (only `gray‑matter` & `yargs` at CLI layer).
+* **Tiny footprint** – minimal runtime dependencies (`gray-matter`, `commander`, `fast-glob` for CLI).
 
 ---
 
 ## ✨ Key Features
 
-| Feature                         | Description                                                             |
-| ------------------------------- | ----------------------------------------------------------------------- |
-| 🔄 **Bidirectional conversion** | `cuws` detects the source format or let you force it.                   |
-| 📂 **Directory mode**           | Convert whole trees while mirroring structure.                          |
-| 🏗️ **TypeScript API**          | Import `convertString()` or `convertDirectory()` in your build scripts. |
-| 🪝 **Streaming first**          | Works perfectly in Unix pipes & GitHub Actions.                         |
-| 🐚 **Single‑file binary**       | ES module with hashbang—no compilation required.                        |
+| Feature                         | Description                                                                         |
+| ------------------------------- | ----------------------------------------------------------------------------------- |
+| 🔄 **Bidirectional conversion** | `cuws` detects the source format or let you force it.                               |
+| 📂 **Directory mode**           | Convert whole trees while mirroring structure (requires output directory specified). |
+| 🏗️ **TypeScript API**          | Import `convertString()`, `convertFile()`, or `convertDirectory()` in your scripts. |
+| 🪝 **Streaming first**          | Works perfectly in Unix pipes & GitHub Actions.                                     |
+| 🐚 **Single‑file binary**       | ES module with hashbang—no compilation required.                                    |
 
 ---
 
@@ -64,8 +64,8 @@ cuws -i .cursor/rules/auth.mdc -o .windsurf/rules/auth.md
 # Pipe via stdin/stdout
 git show HEAD:my-rule.mdc | cuws --reverse > my-rule-cursor.mdc
 
-# Batch convert an entire repo (dry‑run first)
-cuws -d . --reverse --dry-run
+# Batch convert an entire repo (dry‑run first, output to 'converted-rules' directory)
+cuws -d . -o ./converted-rules --reverse --dry-run
 ```
 
 ---
@@ -92,22 +92,42 @@ yarn add -D cursor-windsurf-convert # or npm i -D ...
 cuws [options]
 ```
 
-| Flag                  | Default     | Description                          |                         |
-| --------------------- | ----------- | ------------------------------------ | ----------------------- |
-| `-i, --input <path>`  | `-`         | Path to source file or `-` for stdin |                         |
-| `-o, --output <path>` | `-`         | Path to dest file or `-` for stdout  |                         |
-| `-r, --reverse`       | off         | Treat input as Windsurf ➜ Cursor     |                         |
-| \`--force \<cursor    | windsurf>\` |                                      | Override auto‑detection |
-| `-d, --dir <path>`    |             | Recursively convert directory        |                         |
-| `--dry-run`           | off         | Print planned actions, don’t write   |                         |
-| `--verbose`           | off         | Extra logging                        |                         |
+| Flag                  | Default     | Description                                                                 |
+| --------------------- | ----------- | --------------------------------------------------------------------------- |
+| `-i, --input <path>`  | `-`         | Path to source file or `-` for stdin. Conflicts with `-d`.                  |
+| `-o, --output <path>` | `-`         | Path to dest file (with `-i`) or output directory (required with `-d`).     |
+| `-r, --reverse`       | `false`     | Convert from Windsurf (.md) to Cursor (.mdc).                               |
+| `--force <format>`    |             | Override auto-detection (`cursor` or `windsurf`).                           |
+| `-d, --dir <path>`    |             | Recursively convert directory. Requires `-o` for output. Conflicts with `-i`. |
+| `--dry-run`           | `false`     | Print planned actions, don’t write files.                                   |
+| `--verbose`           | `false`     | Extra logging.                                                              |
 
 ### Programmatic API
 
-```ts
-import { convertString } from 'cursor-windsurf-convert';
+```typescript
+import {
+  convertString,
+  convertFile,
+  convertDirectory,
+} from 'cursor-windsurf-convert';
 
-const windsRule = convertString(cursorRule, 'cw');
+// Convert a string
+const cursorRuleContent = '...'; // content of a .mdc file
+const windsurfRuleContent = convertString(cursorRuleContent, 'cw');
+
+// Convert a single file
+async function exampleConvertFile() {
+  const outputPath = await convertFile('path/to/source.mdc', 'path/to/output.md');
+  console.log(`Converted file written to: ${outputPath}`);
+}
+
+// Convert a directory
+async function exampleConvertDirectory() {
+  const results = await convertDirectory('path/to/source-dir', 'path/to/output-dir');
+  results.forEach(result => {
+    console.log(`${result.sourcePath} -> ${result.destinationPath} (${result.status})`);
+  });
+}
 ```
 
 See [API docs](docs/API.md) for full typings.
@@ -141,7 +161,7 @@ See [API docs](docs/API.md) for full typings.
   "name": "cursor-windsurf-convert",
   "version": "1.0.0",
   "bin": {
-    "cuws": "dist/cli.js" // or ./cli.js if TS-to-ES buildless
+    "cuws": "dist/cli.mjs"
   },
   ...
 }
@@ -153,7 +173,7 @@ The CLI file **must** start with `#!/usr/bin/env node` and be `chmod +x`.
 
 ## 🤝 Contributing
 
-PRs welcome! Check the [open issues](https://github.com/YOUR_ORG/cursor-windsurf-convert/issues) or open a new one. Please read our [CODE\_OF\_CONDUCT](CODE_OF_CONDUCT.md) first.
+PRs welcome! Check the [open issues](https://github.com/gmickel/cursor-windsurf-convert/issues) or open a new one. Also see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 
 ---
 
@@ -161,9 +181,6 @@ PRs welcome! Check the [open issues](https://github.com/YOUR_ORG/cursor-windsurf
 
 * [x] One‑file conversion
 * [x] Directory batch mode
-* [ ] Legacy `.cursorrules` support
-* [ ] JSON schema validation
-* [ ] Native Rust port 🚀
 
 ---
 
@@ -172,7 +189,6 @@ PRs welcome! Check the [open issues](https://github.com/YOUR_ORG/cursor-windsurf
 | Q                                  | A                                              |
 | ---------------------------------- | ---------------------------------------------- |
 | *Does it change my markdown body?* | Nope. Only the YAML/MD header is mapped.       |
-| *Will Windows paths work?*         | Yes via PowerShell. CMD ecosphere PRs welcome. |
 | *Can I embed this in my own tool?* | Absolutely—import the TS API.                  |
 
 ---

@@ -18,13 +18,14 @@ This file captures project-specific intelligence, patterns, user preferences, an
 ## 2. Key Technical Patterns & Decisions (Initial)
 
 *   **Dependencies:**
-    *   Runtime: `gray-matter`, `yargs`, `fast-glob`.
+    *   Runtime: `gray-matter`, `commander`, `fast-glob`.
     *   Dev/Build: `typescript`, `unbuild`, `vitest`, `biome`.
 *   **Node.js Version:** ≥18 LTS.
 *   **Module System:** ESM primary, CJS for API compatibility.
 *   **Streaming:** Use `stream.pipeline()` for I/O.
 *   **Error Handling:** Standardized error codes (E01-E03) and non-zero exit codes.
 *   **CI/CD:** GitHub Actions for lint, test, publish. (To be implemented)
+*   **CLI Argument Parsing:** Use `commander` options (`-i`, `-o`, `-d`) exclusively for file/directory paths. Positional arguments for paths are not supported.
 
 ## 3. Tool Usage Patterns (for Cline)
 
@@ -51,11 +52,12 @@ This file captures project-specific intelligence, patterns, user preferences, an
 *   **Windows CMD Quirks:** Excluded from MVP, but potential future complexity. Focus on PowerShell for Windows.
 *   **Future Schema Changes:** Plan for extensibility/warnings for future rule schema updates (v1.2).
 *   **Complex Glob Patterns:** Document Windsurf's constraints; may need fallback for very complex cases.
-*   **Dependency Discrepancy:** PRD's "zero runtime deps" vs. `fast-glob` for directory mode. Acknowledged that `fast-glob` is a necessary runtime dep for full CLI functionality.
+*   **Dependency Discrepancy:** PRD's "zero runtime deps" vs. `commander` (for CLI parsing) and `fast-glob` (for directory mode). Acknowledged that these are necessary runtime dependencies for full CLI functionality.
 
 ## 6. Evolution of Project Decisions
 
 *   (To be populated as decisions are made or changed throughout the project lifecycle)
+*   **8 May 2025:** Refactored CLI (`src/cli.ts`) to remove positional file arguments and rely more on `commander` options and validation (`.conflicts()`). Custom validation retained for `-d` requiring `-o`.
 
 ---
 This file will be updated iteratively as the project progresses.

@@ -1,14 +1,10 @@
-import { defineBuildConfig } from 'unbuild'
+import { defineBuildConfig } from 'unbuild';
 
 export default defineBuildConfig({
-  entries: [
-    'src/index',
-  ],
+  entries: ['src/index', 'src/cli'],
   declaration: 'node16',
   clean: true,
   rollup: {
-    inlineDependencies: [
-      '@antfu/utils',
-    ],
+    inlineDependencies: ['@antfu/utils'],
   },
-})
+});

@@ -1,0 +1,5 @@
+.:
+  ConversionError: function
+  convertDirectory: function
+  convertFile: function
+  convertString: function
