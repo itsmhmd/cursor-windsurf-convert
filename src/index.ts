@@ -239,7 +239,9 @@ export async function convertDirectory(
 
   // Glob for both .md and .mdc files
   const absoluteSourceDir = resolve(sourceDir); // Resolve to absolute path
-  const globPattern = join(absoluteSourceDir, '**/*.{md,mdc}');
+  // fast-glob requires forward slashes in patterns, even on Windows.
+  const normalizedAbsoluteSourceDir = absoluteSourceDir.replace(/\\/g, '/');
+  const globPattern = `${normalizedAbsoluteSourceDir}/**/*.{md,mdc}`;
   const potentialFiles = await fastGlob(globPattern, {
     onlyFiles: true,
     dot: true,
@@ -249,8 +251,6 @@ export async function convertDirectory(
   if (potentialFiles.length === 0) {
     return [];
   }
-
-  const normalizedAbsoluteSourceDir = absoluteSourceDir.replace(/\\/g, '/'); // Normalize for relative path base
 
   for (const rawSourceFilePath of potentialFiles) {
     const sourceFilePath = rawSourceFilePath.replace(/\\/g, '/'); // Normalize slashes for consistency
