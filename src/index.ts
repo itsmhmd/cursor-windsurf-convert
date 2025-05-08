@@ -303,7 +303,7 @@ export async function convertDirectory(
     const expectedInputExtension =
       fileSpecificDirection === 'cw' ? '.mdc' : '.md';
 
-    if (parsedSourcePath.ext !== expectedInputExtension) {
+    if (parsedSourcePath.ext.toLowerCase() !== expectedInputExtension) {
       results.push({
         sourcePath: sourceFilePath,
         destinationPath: join(destinationDir, relativePath),

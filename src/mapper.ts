@@ -70,7 +70,8 @@ export function serializeRuleFile(
   // Ensure consistent key order for determinism if possible, though gray-matter might not guarantee it.
   // For now, direct stringification is used.
   // biome-ignore lint/suspicious/noExplicitAny: gray-matter's stringify expects `{[key: string]: any;}` for data.
-  return matter.stringify(content, frontMatter as any);
+  const rawOutput = matter.stringify(content, frontMatter as any);
+  return rawOutput.replace(/\r\n/g, '\n');
 }
 
 /**
