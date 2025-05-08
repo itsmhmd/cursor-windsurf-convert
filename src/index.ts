@@ -250,10 +250,13 @@ export async function convertDirectory(
     return [];
   }
 
-  for (const sourceFilePath of potentialFiles) {
-    // sourceFilePath is now absolute, ensure relativePath calculation is correct
-    const relativePath = relative(absoluteSourceDir, sourceFilePath);
-    const parsedSourcePath = parse(sourceFilePath);
+  const normalizedAbsoluteSourceDir = absoluteSourceDir.replace(/\\/g, '/'); // Normalize for relative path base
+
+  for (const rawSourceFilePath of potentialFiles) {
+    const sourceFilePath = rawSourceFilePath.replace(/\\/g, '/'); // Normalize slashes for consistency
+    // sourceFilePath is now absolute with normalized slashes, ensure relativePath calculation is correct
+    const relativePath = relative(normalizedAbsoluteSourceDir, sourceFilePath);
+    const parsedSourcePath = parse(sourceFilePath); // parse handles '/' fine
 
     let fileSpecificDirection: ConversionDirection | undefined =
       options?.direction;
@@ -262,6 +265,7 @@ export async function convertDirectory(
     if (!fileSpecificDirection && !options?.forceFormat) {
       // Only detect if no overall direction and not forcing format
       try {
+        // Use the potentially normalized sourceFilePath for reading
         const fileContentForDetect = await readFile(sourceFilePath, 'utf-8');
         const detectedFormat = detectFormat(fileContentForDetect);
         if (detectedFormat === 'cursor') {
